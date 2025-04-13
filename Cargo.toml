@@ -5,7 +5,27 @@ edition = "2024"
 
 [dependencies]
 iced = "0.13.1"
+
 anyhow = "1.0"
+
+twilight-gateway = "0.16"
+twilight-http = { default-features = false, version = "0.16", features = ["native-tls"] }
+twilight-http-ratelimiting = { default-features = false, version = "0.16.0" }
+twilight-model = "0.16"
+twilight-cache-inmemory = "0.16"
+
+bytes = "1.9.0"
+
+http = { default-features = false, version = "1" }
+http-body-util = { default-features = false, version = "0.1" }
+hyper = { default-features = false, version = "1" }
+hyper-util = { default-features = false, features = ["client-legacy", "http1", "http2", "tokio"], version = "0.1.2" }
+hyper-tls = { default-features = false, features = ["alpn"], version = "0.6" }
+
+tokio = { version = "1.42.0", features = ["full"] }
+
+tracing = "0.1"
+tracing-subscriber = "0.3"
 
 [lints.clippy]
 correctness = "deny"
