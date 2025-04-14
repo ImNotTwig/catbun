@@ -22,6 +22,7 @@
         toolchain
         pkgs.openssl
         pkgs.pkg-config
+        pkgs.cmake
       ];
     };
   };

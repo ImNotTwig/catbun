@@ -1,16 +1,20 @@
 use std::sync::{Arc, atomic::AtomicBool};
 
 use http::HeaderMap;
+use tokio_websockets::Connector as TokioConnector;
+use twilight_gateway::{Intents, Session, Shard, ShardId, queue::InMemoryQueue};
 use twilight_http_ratelimiting::InMemoryRatelimiter;
-use twilight_model::channel::message::AllowedMentions;
+use twilight_model::{
+    channel::message::AllowedMentions,
+    gateway::payload::outgoing::{
+        identify::IdentifyProperties, update_presence::UpdatePresencePayload,
+    },
+};
 
 use hyper_util::{
     client::legacy::{Client as HyperClient, connect::HttpConnector},
     rt::TokioExecutor,
 };
-
-type HttpsConnector<T> = hyper_tls::HttpsConnector<T>;
-type Connector = HttpsConnector<HttpConnector>;
 
 /// So basically, using a non-bot token to interact with the Discord API breaks TOS
 /// which means that twilight doesn't allow us to use a user token normally, as they
@@ -22,8 +26,14 @@ pub fn new_twilight_http_client(token: String) -> twilight_http::Client {
     unsafe { std::mem::transmute(HttpDiscordClient::new(Some(token))) }
 }
 
+/// this function uses transmute for the same reason `new_twilight_http_client` does
+pub fn new_twilight_gateway_client(id: ShardId, token: String, intents: Intents) -> Shard {
+    Shard::with_config(id, unsafe {
+        std::mem::transmute(DiscordGatewayConfig::new(intents, token))
+    })
+}
+
 #[allow(dead_code)]
-#[derive(Default)]
 struct Token {
     inner: Box<str>,
 }
@@ -35,6 +45,9 @@ impl Token {
         }
     }
 }
+
+type HttpsConnector<T> = hyper_tls::HttpsConnector<T>;
+type Connector = HttpsConnector<HttpConnector>;
 
 #[allow(dead_code)]
 struct HttpDiscordClient {
@@ -72,6 +85,39 @@ impl HttpDiscordClient {
             token,
             default_allowed_mentions: None,
             use_http: false,
+        }
+    }
+}
+
+#[allow(dead_code)]
+struct DiscordGatewayConfig<Q = InMemoryQueue> {
+    identify_properties: Option<IdentifyProperties>,
+    intents: Intents,
+    large_threshold: u64,
+    presence: Option<UpdatePresencePayload>,
+    proxy_url: Option<Box<str>>,
+    queue: Q,
+    ratelimit_messages: bool,
+    resume_url: Option<Box<str>>,
+    session: Option<Session>,
+    tls: Arc<TokioConnector>,
+    token: Token,
+}
+
+impl DiscordGatewayConfig {
+    fn new(intents: Intents, token: String) -> Self {
+        Self {
+            identify_properties: None,
+            intents,
+            large_threshold: 50,
+            presence: None,
+            proxy_url: None,
+            queue: InMemoryQueue::default(),
+            ratelimit_messages: true,
+            resume_url: None,
+            session: None,
+            tls: Arc::new(TokioConnector::new().unwrap()),
+            token: Token::new(token),
         }
     }
 }
