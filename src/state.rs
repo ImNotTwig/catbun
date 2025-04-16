@@ -1,7 +1,7 @@
 use std::{env, num::NonZeroU64, sync::Arc};
 
 use twilight_cache_inmemory::{DefaultInMemoryCache, InMemoryCache};
-use twilight_gateway::{Intents, ShardId};
+use twilight_gateway::{Intents, Shard, ShardId};
 use twilight_http::Client as HttpClient;
 
 use crate::twilight_types;
@@ -17,18 +17,15 @@ pub enum Message {
     Connect(()),
 }
 
-pub type State = Arc<StateRef>;
-
-pub struct StateRef {
-    http: HttpClient,
-    cache: InMemoryCache,
+pub struct State {
+    http: Arc<HttpClient>,
+    cache: Arc<InMemoryCache>,
+    shard: Arc<Shard>,
 }
 
-async fn connected(state: State) {
-    let name = state
-        .http
+async fn connected(http_client: Arc<HttpClient>) {
+    let name = http_client
         .current_user()
-        .into_future()
         .await
         .unwrap()
         .model()
@@ -39,7 +36,7 @@ async fn connected(state: State) {
     tracing::info!("Logged in as `{name}`.");
 }
 
-impl StateRef {
+impl State {
     fn container_style() -> container::Style {
         container::Style::default()
             .background(iced::Color::from_rgb(
@@ -110,7 +107,7 @@ impl StateRef {
     }
 }
 
-impl Default for StateRef {
+impl Default for State {
     fn default() -> Self {
         let token = env::var("TOKEN")
             .expect("Define the TOKEN environmental variable before running catbun.");
@@ -120,23 +117,13 @@ impl Default for StateRef {
             .message_cache_size(10)
             .build();
 
-        // let mut shard =
-        //     twilight_types::new_twilight_gateway_client(ShardId::ONE, token, Intents::all());
+        let shard =
+            twilight_types::new_twilight_gateway_client(ShardId::ONE, token, Intents::all());
 
-        // for message in http_client
-        //     .channel_messages(twilight_model::id::Id::from(
-        //         NonZeroU64::new(909989219278159932).unwrap(),
-        //     ))
-        //     .await?
-        //     .model()
-        //     .await?
-        // {
-        //     tracing::info!("Message: {}", message.content);
-        // }
-
-        StateRef {
-            http: http_client,
-            cache,
+        Self {
+            http: Arc::new(http_client),
+            cache: Arc::new(cache),
+            shard: Arc::new(shard),
         }
     }
 }
@@ -150,13 +137,12 @@ pub trait AppHandler {
 impl AppHandler for State {
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
+            Message::Connect(_) => Task::perform(connected(Arc::clone(&self.http)), Message::None),
             Message::None(_) => Task::none(),
-            Message::Connect(_) => Task::perform(connected(Arc::clone(&self)), Message::None),
         }
     }
 
     fn view(&self) -> Element<Message> {
-        //TODO: Mockup a layout for a server
         row![
             self.servers_view(),
             self.channels_view(),
