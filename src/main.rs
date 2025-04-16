@@ -1,21 +1,25 @@
-use std::env;
+use std::sync::Arc;
 
-use twilight_gateway::{Intents, ShardId};
+use twilight_http::Client as HttpClient;
 
+use iced::Task;
+
+use state::{AppHandler, Message, State};
+
+mod state;
 mod twilight_types;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
 
-    let token = env::var("TOKEN")?;
-    let http_client = twilight_types::new_twilight_http_client(token.clone());
-    let user = http_client.current_user().await?.model().await?;
+    let app = iced::application("Catbun", State::update, State::view)
+        .theme(|_state| iced::theme::Theme::Oxocarbon);
 
-    let mut shard =
-        twilight_types::new_twilight_gateway_client(ShardId::ONE, token, Intents::all());
-
-    tracing::info!("Logged in as: {}!", user.name);
-
-    Ok(())
+    Ok(app.run_with(|| -> (State, Task<Message>) {
+        (
+            State::default(),
+            Task::perform((async || {})(), Message::Connect),
+        )
+    })?)
 }

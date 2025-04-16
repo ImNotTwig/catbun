@@ -16,13 +16,30 @@
     };
     toolchain = pkgs.rust-bin.fromRustupToolchainFile ./toolchain.toml;
   in {
-    devShells.${system}.default = pkgs.mkShell {
+    devShells.${system}.default = pkgs.mkShell rec {
       RUST_SRC_PATH = "${toolchain}/lib/rustlib/src/rust/library";
+      LD_LIBRARY_PATH =
+        builtins.foldl' (a: b: "${a}:${b}/lib") "${pkgs.vulkan-loader}/lib" buildInputs;
       packages = [
         toolchain
-        pkgs.openssl
-        pkgs.pkg-config
-        pkgs.cmake
+      ];
+      buildInputs = with pkgs; [
+        pkg-config
+        cmake
+        openssl
+
+        expat
+        fontconfig
+        freetype
+        freetype.dev
+        libGL
+        pkg-config
+        xorg.libX11
+        xorg.libXcursor
+        xorg.libXi
+        xorg.libXrandr
+        wayland
+        libxkbcommon
       ];
     };
   };
