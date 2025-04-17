@@ -28,6 +28,7 @@ tokio-websockets = { default-features = false, features = ["client", "fastrand",
 tracing = "0.1"
 tracing-subscriber = "0.3"
 
+
 [lints.clippy]
 correctness = "deny"
 suspicious = "warn"

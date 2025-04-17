@@ -4,6 +4,7 @@ use http::HeaderMap;
 use tokio_websockets::Connector as TokioConnector;
 use twilight_gateway::{Intents, Session, Shard, ShardId, queue::InMemoryQueue};
 use twilight_http_ratelimiting::InMemoryRatelimiter;
+
 use twilight_model::{
     channel::message::AllowedMentions,
     gateway::payload::outgoing::{

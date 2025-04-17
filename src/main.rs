@@ -9,6 +9,8 @@ use state::{AppHandler, Message, State};
 mod state;
 mod twilight_types;
 
+mod events;
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
